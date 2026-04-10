@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Frankie · Pagos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: #2e2e2e;
+    --accent: #e8ff47;
+    --accent2: #47c8ff;
+    --danger: #ff5c5c;
+    --text: #f0f0f0;
+    --text2: #888;
+    --text3: #555;
+    --radius: 12px;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: var(--bg); z-index: 100;
+  }
+  .logo { font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--accent); }
+  .logo span { color: var(--text2); font-weight: 700; font-size: 11px; margin-left: 7px; letter-spacing: 2px; text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .sheet-status { display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--mono); color: var(--text2); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+  .dot.ok { background: #4cff91; box-shadow: 0 0 6px #4cff9166; }
+  .dot.err { background: var(--danger); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.9);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; padding: 16px;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px 24px;
+    width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal h2 { font-family: var(--display); font-size: 20px; margin-bottom: 6px; }
+  .modal p { color: var(--text2); font-size: 13px; line-height: 1.6; margin-bottom: 16px; }
+  .modal ol { color: var(--text2); font-size: 12px; line-height: 1.9; padding-left: 16px; margin-bottom: 20px; }
+  .modal ol li b { color: var(--text); }
+  .modal a { color: var(--accent2); text-decoration: none; }
+  .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .field-group label { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+  .field-group input {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; color: var(--text); font-family: var(--mono); font-size: 14px;
+    outline: none; transition: border-color .2s; -webkit-appearance: none;
+  }
+  .field-group input:focus { border-color: var(--accent); }
+  .field-group input::placeholder { color: var(--text3); }
+
+  /* MAIN */
+  main { flex: 1; display: grid; grid-template-columns: 360px 1fr; min-height: 0; }
+
+  .panel-carga {
+    border-right: 1px solid var(--border);
+    padding: 22px 20px; display: flex; flex-direction: column; overflow-y: auto;
+  }
+  .panel-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--text3); margin-bottom: 16px; }
+
+  .form-field { margin-bottom: 12px; }
+  .form-field label { display: block; font-size: 10px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+  .form-field input, .form-field select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 11px 13px; color: var(--text); font-family: var(--sans);
+    font-size: 15px; outline: none; transition: border-color .15s;
+    -webkit-appearance: none; appearance: none;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+  .form-field input::placeholder { color: var(--text3); }
+  .form-field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+  }
+  .form-field select option { background: #1a1a1a; }
+
+  .importe-wrap { position: relative; }
+  .importe-wrap input { padding-left: 26px; font-family: var(--mono); font-size: 17px; font-weight: 500; }
+  .importe-wrap::before { content: "$"; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text2); font-family: var(--mono); font-size: 14px; pointer-events: none; }
+
+  .btn-firmar {
+    width: 100%; background: var(--accent); color: #000; border: none;
+    border-radius: 10px; padding: 15px; font-family: var(--display); font-size: 16px;
+    font-weight: 800; cursor: pointer; margin-top: 6px;
+    box-shadow: 0 4px 20px #e8ff4733; -webkit-tap-highlight-color: transparent;
+  }
+  .btn-firmar:active { transform: scale(0.98); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+  .log-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--text3); margin-bottom: 10px; }
+  .log-list { display: flex; flex-direction: column; gap: 5px; }
+  .log-item {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 11px; display: flex; align-items: center; gap: 8px; font-size: 13px;
+    animation: fadeIn .3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .log-item .prov { font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .log-item .monto { font-family: var(--mono); font-size: 12px; color: var(--accent); white-space: nowrap; }
+  .log-item .chk { width: 18px; height: 18px; border-radius: 50%; background: #4cff9122; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .log-item .chk svg { width: 10px; height: 10px; stroke: #4cff91; }
+  .log-empty { color: var(--text3); font-size: 12px; font-style: italic; }
+
+  .log-total { margin-top: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; display: flex; justify-content: space-between; align-items: center; }
+  .log-total span { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+  .log-total strong { font-family: var(--mono); font-size: 17px; color: var(--accent); }
+
+  .btn-export { width: 100%; margin-top: 8px; background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 9px; color: var(--text2); font-family: var(--mono); font-size: 11px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .btn-export:active { border-color: var(--accent2); color: var(--accent2); }
+
+  /* PANEL FIRMA (desktop) */
+  .panel-firma { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 20px; overflow-y: auto; }
+  .firma-idle { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--text3); }
+  .firma-idle .icon { font-size: 40px; opacity: .3; }
+  .firma-idle p { font-size: 13px; text-align: center; max-width: 220px; line-height: 1.6; }
+
+  /* FIRMA CARD (usada tanto en desktop como overlay mobile) */
+  .firma-card { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 520px; }
+  .firma-card.active { display: flex; animation: slideUp .3s ease; }
+
+  .firma-header { width: 100%; background: var(--surface); border: 1px solid var(--border); border-bottom: none; border-radius: 12px 12px 0 0; padding: 20px 22px 18px; }
+  .firma-header .greeting { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+  .firma-header .nombre { font-family: var(--display); font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 14px; }
+
+  .firma-detalle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .detalle-item { background: var(--surface2); border-radius: 8px; padding: 9px 12px; }
+  .detalle-item .key { font-size: 9px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+  .detalle-item .val { font-size: 14px; font-weight: 600; color: var(--text); }
+  .detalle-item.importe .val { font-family: var(--mono); font-size: 20px; color: var(--accent); }
+  .detalle-item.full { grid-column: 1 / -1; }
+
+  .canvas-wrap { width: 100%; background: var(--surface); border: 1px solid var(--border); border-top: 2px dashed var(--border); padding: 14px 16px 10px; }
+  .canvas-label { font-size: 10px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .btn-limpiar { background: none; border: none; color: var(--text3); font-size: 10px; font-family: var(--mono); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; padding: 4px 8px; -webkit-tap-highlight-color: transparent; }
+
+  /* Canvas fondo BLANCO, trazo negro — se ve siempre */
+  #firmaCanvas { width: 100%; height: 150px; background: #ffffff; border-radius: 8px; cursor: crosshair; display: block; touch-action: none; border: 2px solid #ddd; }
+
+  .firma-footer { width: 100%; background: var(--surface); border: 1px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; padding: 14px 16px; display: flex; gap: 8px; }
+
+  .btn-cancelar { flex: 0 0 auto; background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text2); font-family: var(--sans); font-size: 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .btn-cancelar:active { border-color: var(--danger); color: var(--danger); }
+
+  .btn-confirmar { flex: 1; background: var(--accent); border: none; border-radius: 8px; padding: 13px; color: #000; font-family: var(--display); font-size: 16px; font-weight: 800; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .btn-confirmar:active { opacity: .85; }
+  .btn-confirmar:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* OVERLAY MOBILE */
+  .firma-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); overflow-y: auto; }
+  .firma-overlay.active { display: block; animation: slideUp .25s ease; }
+  .firma-overlay-inner { display: flex; flex-direction: column; align-items: center; padding: 20px 16px 40px; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 11px 18px; font-size: 13px; font-family: var(--mono); transition: transform .3s ease, opacity .3s; opacity: 0; z-index: 500; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.success { border-color: #4cff9155; color: #4cff91; }
+  .toast.error   { border-color: #ff5c5c55; color: var(--danger); }
+
+  .btn-setup { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; color: var(--text2); font-size: 12px; font-family: var(--mono); cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+  .btn-primary { background: var(--accent); border: none; border-radius: 8px; padding: 13px 24px; color: #000; font-family: var(--display); font-size: 15px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 4px; }
+
+  @media (max-width: 680px) {
+    main { grid-template-columns: 1fr; }
+    .panel-firma { display: none; }
+    .panel-carga { border-right: none; padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- MODAL SETUP -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>Configuración inicial</h2>
+    <p>Conectá la app con tu Google Sheet. Solo hay que hacerlo una vez.</p>
+    <ol>
+      <li>Abrí <a href="https://sheets.google.com" target="_blank">Google Sheets</a> y creá una hoja nueva</li>
+      <li>En la fila 1 poné estos encabezados:<br>
+        <code style="font-size:11px;color:var(--accent2)">Fecha | Hora | Proveedor | Cobrador | Importe | Forma de Pago | Registrado por | Firma</code></li>
+      <li>Andá a <b>Extensiones → Apps Script</b>, pegá el script de abajo, guardá</li>
+      <li><b>Implementar → Nueva implementación</b> → Tipo: App web → Acceso: Cualquiera → Implementar</li>
+      <li>Copiá la URL y pegala abajo</li>
+    </ol>
+    <details style="margin-bottom:18px;">
+      <summary style="cursor:pointer;font-size:12px;color:var(--accent2);font-family:var(--mono);margin-bottom:8px;">▶ Ver script de Apps Script</summary>
+      <pre id="scriptCode" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;color:var(--text2);overflow-x:auto;line-height:1.6;white-space:pre-wrap;">function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    sheet.appendRow([
+      data.fecha, data.hora, data.proveedor, data.cobrador,
+      data.importe, data.formaPago, data.registradoPor,
+      data.firma ? "✓ firmado" : "sin firma"
+    ]);
+    return ContentService
+      .createTextOutput(JSON.stringify({ok: true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ok: false, error: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+      <button onclick="copyScript()" style="margin-top:8px;background:none;border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text2);font-size:12px;font-family:var(--mono);cursor:pointer;">Copiar script</button>
+    </details>
+    <div class="field-group">
+      <label>URL del Web App</label>
+      <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/..." />
+    </div>
+    <div class="field-group">
+      <label>Tu nombre (quién registra)</label>
+      <input type="text" id="registradorInput" placeholder="Ej: Franco" />
+    </div>
+    <button class="btn-primary" onclick="guardarConfig()">Guardar y empezar</button>
+  </div>
+</div>
+
+<!-- OVERLAY FIRMA (mobile) -->
+<div class="firma-overlay" id="firmaOverlay">
+  <div class="firma-overlay-inner" id="firmaOverlayInner"></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Frankie <span>Pagos</span></div>
+  <div class="header-right">
+    <div class="sheet-status">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText" style="font-size:11px;font-family:var(--mono);">Sin configurar</span>
+    </div>
+    <button class="btn-setup" onclick="abrirSetup()">⚙ Config</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+  <div class="panel-carga">
+    <div class="panel-title">Nuevo pago</div>
+    <div class="form-field">
+      <label>Proveedor</label>
+      <input type="text" id="proveedor" placeholder="Nombre del proveedor" autocomplete="off" />
+    </div>
+    <div class="form-field">
+      <label>Cobrador / Quien retira</label>
+      <input type="text" id="cobrador" placeholder="Nombre de quien retira" autocomplete="off" />
+    </div>
+    <div class="form-field">
+      <label>Importe</label>
+      <div class="importe-wrap">
+        <input type="number" id="importe" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Forma de pago</label>
+      <select id="formaPago">
+        <option value="Efectivo">Efectivo</option>
+        <option value="Transferencia">Transferencia</option>
+        <option value="Cheque">Cheque</option>
+        <option value="Otro">Otro</option>
+      </select>
+    </div>
+    <button class="btn-firmar" onclick="iniciarFirma()">Llamar a firmar →</button>
+    <hr class="divider">
+    <div class="log-title">Pagos del día</div>
+    <div class="log-list" id="logList">
+      <div class="log-empty" id="logEmpty">Ningún pago registrado aún</div>
+    </div>
+    <div class="log-total" id="logTotal" style="display:none;">
+      <span>Total</span>
+      <strong id="totalMonto">$0</strong>
+    </div>
+    <button class="btn-export" id="btnExport" style="display:none;" onclick="exportarCSV()">↓ Exportar CSV del día</button>
+  </div>
+
+  <div class="panel-firma">
+    <div class="firma-idle" id="firmaIdle">
+      <div class="icon">✍️</div>
+      <p>Completá los datos y hacé clic en <b>Llamar a firmar</b></p>
+    </div>
+    <div class="firma-card" id="firmaCard"></div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let config = { url: '', registrador: '' };
+let pagosHoy = [];
+let firmaActiva = null;
+let canvasEl = null, ctx = null, dibujando = false, firmaTrazada = false;
+
+window.onload = () => {
+  const saved = localStorage.getItem('frankie_config');
+  if (saved) {
+    config = JSON.parse(saved);
+    document.getElementById('modalOverlay').classList.add('hidden');
+    actualizarStatus(true);
+  }
+};
+
+const isMobile = () => window.innerWidth <= 680;
+
+function getFecha() {
+  return new Date().toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long' });
+}
+
+function abrirSetup() {
+  document.getElementById('modalOverlay').classList.remove('hidden');
+  if (config.url) document.getElementById('scriptUrl').value = config.url;
+  if (config.registrador) document.getElementById('registradorInput').value = config.registrador;
+}
+
+function guardarConfig() {
+  const url = document.getElementById('scriptUrl').value.trim();
+  const reg = document.getElementById('registradorInput').value.trim();
+  if (!url || !reg) { showToast('Completá los dos campos', 'error'); return; }
+  config = { url, registrador: reg };
+  localStorage.setItem('frankie_config', JSON.stringify(config));
+  document.getElementById('modalOverlay').classList.add('hidden');
+  actualizarStatus(true);
+  showToast('Configuración guardada ✓', 'success');
+}
+
+function actualizarStatus(ok) {
+  document.getElementById('statusDot').className = 'dot ' + (ok ? 'ok' : 'err');
+  document.getElementById('statusText').textContent = ok ? 'Conectado · ' + config.registrador : 'Sin configurar';
+}
+
+function copyScript() {
+  navigator.clipboard.writeText(document.getElementById('scriptCode').textContent);
+  showToast('Script copiado ✓', 'success');
+}
+
+// ── Construir HTML de firma ───────────────────────────────────────────────────
+function firmaHTML(f) {
+  return `
+    <div class="firma-header">
+      <div class="greeting">Por favor firmá tu recibo</div>
+      <div class="nombre">${f.proveedor}</div>
+      <div class="firma-detalle">
+        <div class="detalle-item importe">
+          <div class="key">Importe</div>
+          <div class="val">$${Number(f.importe).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>
+        </div>
+        <div class="detalle-item">
+          <div class="key">Forma de pago</div>
+          <div class="val">${f.formaPago}</div>
+        </div>
+        <div class="detalle-item full">
+          <div class="key">Cobrador / Quien retira</div>
+          <div class="val">${f.cobrador}</div>
+        </div>
+        <div class="detalle-item full">
+          <div class="key">Fecha</div>
+          <div class="val">${getFecha()}</div>
+        </div>
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <div class="canvas-label">
+        <span>Firmá abajo</span>
+        <button class="btn-limpiar" onclick="limpiarFirma()">Limpiar</button>
+      </div>
+      <canvas id="firmaCanvas"></canvas>
+    </div>
+    <div class="firma-footer">
+      <button class="btn-cancelar" onclick="cancelarFirma()">Cancelar</button>
+      <button class="btn-confirmar" id="btnConfirmar" onclick="confirmarFirma()">Confirmar cobro</button>
+    </div>`;
+}
+
+// ── Canvas ────────────────────────────────────────────────────────────────────
+function initCanvas() {
+  canvasEl = document.getElementById('firmaCanvas');
+  if (!canvasEl) return;
+  dibujando = false;
+  firmaTrazada = false;
+
+  // Esperar que el layout termine para leer dimensiones reales
+  requestAnimationFrame(() => {
+    const dpr  = window.devicePixelRatio || 1;
+    const rect = canvasEl.getBoundingClientRect();
+    canvasEl.width  = Math.round(rect.width  * dpr);
+    canvasEl.height = Math.round(rect.height * dpr);
+    ctx = canvasEl.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth   = 2.5;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+
+    const pos = (e) => {
+      const r   = canvasEl.getBoundingClientRect();
+      const src = e.touches ? e.touches[0] : e;
+      return { x: src.clientX - r.left, y: src.clientY - r.top };
+    };
+
+    canvasEl.addEventListener('pointerdown', e => { e.preventDefault(); dibujando = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+    canvasEl.addEventListener('pointermove', e => { e.preventDefault(); if (!dibujando) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); firmaTrazada = true; });
+    canvasEl.addEventListener('pointerup',    e => { e.preventDefault(); dibujando = false; });
+    canvasEl.addEventListener('pointerleave', e => { e.preventDefault(); dibujando = false; });
+  });
+}
+
+function limpiarFirma() {
+  if (!canvasEl || !ctx) return;
+  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+  firmaTrazada = false;
+}
+
+// ── Flujo ─────────────────────────────────────────────────────────────────────
+function iniciarFirma() {
+  const prov  = document.getElementById('proveedor').value.trim();
+  const cob   = document.getElementById('cobrador').value.trim();
+  const imp   = parseFloat(document.getElementById('importe').value);
+  const forma = document.getElementById('formaPago').value;
+
+  if (!prov)            { showToast('Falta el nombre del proveedor', 'error'); return; }
+  if (!cob)             { showToast('Falta el nombre del cobrador',  'error'); return; }
+  if (!imp || imp <= 0) { showToast('Ingresá un importe válido',     'error'); return; }
+
+  firmaActiva = { proveedor: prov, cobrador: cob, importe: imp, formaPago: forma };
+  const html  = firmaHTML(firmaActiva);
+
+  if (isMobile()) {
+    const inner = document.getElementById('firmaOverlayInner');
+    inner.innerHTML = `<div style="width:100%;max-width:520px;">${html}</div>`;
+    document.getElementById('firmaOverlay').classList.add('active');
+    document.getElementById('firmaOverlay').scrollTop = 0;
+  } else {
+    const card = document.getElementById('firmaCard');
+    card.innerHTML = html;
+    card.classList.add('active');
+    document.getElementById('firmaIdle').style.display = 'none';
+  }
+
+  requestAnimationFrame(() => initCanvas());
+}
+
+function cancelarFirma() {
+  firmaActiva = null; firmaTrazada = false;
+  if (isMobile()) {
+    document.getElementById('firmaOverlay').classList.remove('active');
+  } else {
+    const card = document.getElementById('firmaCard');
+    card.classList.remove('active'); card.innerHTML = '';
+    document.getElementById('firmaIdle').style.display = 'flex';
+  }
+}
+
+async function confirmarFirma() {
+  if (!firmaTrazada) { showToast('El cobrador debe firmar primero', 'error'); return; }
+  const btn = document.getElementById('btnConfirmar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  const firmaImg = canvasEl.toDataURL('image/png');
+  const ahora    = new Date();
+  const registro = {
+    fecha: ahora.toLocaleDateString('es-AR'),
+    hora:  ahora.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}),
+    proveedor: firmaActiva.proveedor, cobrador: firmaActiva.cobrador,
+    importe: firmaActiva.importe, formaPago: firmaActiva.formaPago,
+    registradoPor: config.registrador, firma: firmaImg
+  };
+
+  let ok = false;
+  if (config.url) {
+    try {
+      await fetch(config.url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(registro) });
+      ok = true;
+    } catch(e) { console.error(e); }
+  }
+
+  pagosHoy.push(registro);
+  agregarAlLog(registro);
+
+  document.getElementById('proveedor').value = '';
+  document.getElementById('cobrador').value  = '';
+  document.getElementById('importe').value   = '';
+  firmaActiva = null; firmaTrazada = false;
+
+  if (isMobile()) {
+    document.getElementById('firmaOverlay').classList.remove('active');
+  } else {
+    const card = document.getElementById('firmaCard');
+    card.classList.remove('active'); card.innerHTML = '';
+    document.getElementById('firmaIdle').style.display = 'flex';
+  }
+
+  showToast(ok ? '✓ Guardado en Google Sheets' : '✓ Guardado localmente', 'success');
+}
+
+function agregarAlLog(reg) {
+  document.getElementById('logEmpty').style.display = 'none';
+  const item = document.createElement('div');
+  item.className = 'log-item';
+  item.innerHTML = `<div class="chk"><svg viewBox="0 0 12 12" fill="none" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg></div><span class="prov">${reg.proveedor}</span><span class="monto">$${Number(reg.importe).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>`;
+  document.getElementById('logList').appendChild(item);
+  const total = pagosHoy.reduce((s,p) => s + Number(p.importe), 0);
+  document.getElementById('totalMonto').textContent = '$' + total.toLocaleString('es-AR',{minimumFractionDigits:2});
+  document.getElementById('logTotal').style.display = 'flex';
+  document.getElementById('btnExport').style.display = 'block';
+}
+
+function exportarCSV() {
+  const cols = ['Fecha','Hora','Proveedor','Cobrador','Importe','Forma de Pago','Registrado por'];
+  const rows = pagosHoy.map(p => [p.fecha, p.hora, p.proveedor, p.cobrador, p.importe, p.formaPago, p.registradoPor].join(','));
+  const csv  = [cols.join(','), ...rows].join('\n');
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = `pagos_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  setTimeout(() => t.className = `toast ${type}`, 2800);
+}
+</script>
+</body>
+</html>

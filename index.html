@@ -308,9 +308,17 @@
     <div class="panel-title">Nuevo pago</div>
     <div class="form-field">
       <label>Proveedor</label>
-      <select id="proveedor" onchange="autocargarMonto()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:var(--sans);font-size:15px;outline:none;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'%23888\' stroke-width=\'1.5\' fill=\'none\'/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;">
-        <option value="">— Seleccioná un proveedor —</option>
-      </select>
+      <div style="position:relative;">
+        <div id="proveedorDisplay" onclick="toggleDropdown()"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 36px 11px 13px;color:var(--text2);font-family:var(--sans);font-size:15px;cursor:pointer;user-select:none;position:relative;">
+          — Seleccioná un proveedor —
+        </div>
+        <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text2);">▾</div>
+        <div id="proveedorDropdown"
+          style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;z-index:300;max-height:260px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.12);">
+        </div>
+      </div>
+      <input type="hidden" id="proveedor" />
     </div>
     <div class="form-field">
       <label>Cobrador / Quien retira</label>
@@ -613,36 +621,65 @@ function guardarLista() {
 }
 
 function actualizarSelectProveedores() {
-  const sel = document.getElementById('proveedor');
-  sel.innerHTML = '<option value="">— Seleccioná un proveedor —</option>';
-  // Agrupar por día
+  const dropdown = document.getElementById('proveedorDropdown');
+  if (!dropdown) return;
+  dropdown.innerHTML = '';
+
+  // Opción vacía
+  const empty = document.createElement('div');
+  empty.textContent = '— Seleccioná un proveedor —';
+  empty.style.cssText = 'padding:11px 14px;color:var(--text2);font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);';
+  empty.onclick = () => seleccionarProveedor('', '', '');
+  dropdown.appendChild(empty);
+
   const dias = [...new Set(listaProvs.map(p => p.dia))];
   dias.forEach(dia => {
     const grupo = listaProvs.filter(p => p.dia === dia);
-    if (grupo.length) {
-      const og = document.createElement('optgroup');
-      og.label = dia.charAt(0).toUpperCase() + dia.slice(1);
-      grupo.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.nombre;
-        opt.textContent = `${p.nombre}  ·  $${Number(p.monto).toLocaleString('es-AR',{minimumFractionDigits:0})}`;
-        opt.dataset.monto = p.monto;
-        og.appendChild(opt);
-      });
-      sel.appendChild(og);
-    }
+    if (!grupo.length) return;
+
+    // Cabecera de grupo
+    const header = document.createElement('div');
+    header.textContent = dia.charAt(0).toUpperCase() + dia.slice(1);
+    header.style.cssText = 'padding:7px 14px;font-size:10px;font-family:var(--mono);color:var(--text2);text-transform:uppercase;letter-spacing:1px;background:var(--surface2);border-bottom:1px solid var(--border);';
+    dropdown.appendChild(header);
+
+    grupo.forEach(p => {
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:11px 14px;font-size:14px;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;';
+      item.innerHTML = `<span>${p.nombre}</span><span style="font-family:var(--mono);font-size:12px;color:var(--accent);">$${Number(p.monto).toLocaleString('es-AR',{minimumFractionDigits:0})}</span>`;
+      item.ontouchstart = () => {};  // iOS hover fix
+      item.onmouseenter = () => item.style.background = 'var(--surface2)';
+      item.onmouseleave = () => item.style.background = '';
+      item.onclick = () => seleccionarProveedor(p.nombre, p.monto, dia);
+      dropdown.appendChild(item);
+    });
   });
 }
 
-function autocargarMonto() {
-  const sel = document.getElementById('proveedor');
-  const opt = sel.options[sel.selectedIndex];
-  if (opt && opt.dataset.monto) {
-    document.getElementById('importe').value = opt.dataset.monto;
-  } else {
-    document.getElementById('importe').value = '';
-  }
+function seleccionarProveedor(nombre, monto, dia) {
+  document.getElementById('proveedor').value = nombre;
+  const display = document.getElementById('proveedorDisplay');
+  display.textContent = nombre || '— Seleccioná un proveedor —';
+  display.style.color = nombre ? 'var(--text)' : 'var(--text2)';
+  document.getElementById('importe').value = monto || '';
+  document.getElementById('proveedorDropdown').style.display = 'none';
 }
+
+function toggleDropdown() {
+  const dd = document.getElementById('proveedorDropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+// Cerrar dropdown al tocar afuera
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('proveedorDisplay')?.parentElement;
+  if (wrap && !wrap.contains(e.target)) {
+    const dd = document.getElementById('proveedorDropdown');
+    if (dd) dd.style.display = 'none';
+  }
+});
+
+function autocargarMonto() { /* handled by seleccionarProveedor */ }
 
 // ── Flujo ─────────────────────────────────────────────────────────────────────
 function iniciarFirma() {
@@ -712,7 +749,8 @@ async function confirmarFirma() {
   agregarAlLog(registro);
 
   document.getElementById('proveedor').value = '';
-  autocargarMonto();
+  const display = document.getElementById('proveedorDisplay');
+  if (display) { display.textContent = '— Seleccioná un proveedor —'; display.style.color = 'var(--text2)'; }
   document.getElementById('cobrador').value  = '';
   document.getElementById('importe').value   = '';
   firmaActiva = null; firmaTrazada = false;

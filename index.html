@@ -234,13 +234,27 @@
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // Guardar pago firmado
+    // Guardar firma en Drive
+    var firmaUrl = '';
+    if (data.firma && data.firma.indexOf('base64') > -1) {
+      var carpeta;
+      var carpetas = DriveApp.getFoldersByName('Firmas Frankie');
+      carpeta = carpetas.hasNext() ? carpetas.next() : DriveApp.createFolder('Firmas Frankie');
+      var base64 = data.firma.split(',')[1];
+      var blob = Utilities.newBlob(Utilities.base64Decode(base64), 'image/png',
+        'firma_' + data.proveedor + '_' + data.fecha + '.png');
+      var archivo = carpeta.createFile(blob);
+      archivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      firmaUrl = archivo.getUrl();
+    }
+
+    // Guardar pago en hoja Pagos
     var sheet = ss.getSheetByName('Pagos') || ss.getActiveSheet();
     sheet.appendRow([
       data.fecha, data.hora, data.proveedor, data.cobrador,
-      data.importe, data.formaPago, data.registradoPor,
-      data.firma ? "✓ firmado" : "sin firma"
+      data.importe, data.formaPago, data.registradoPor, firmaUrl
     ]);
+
     return ContentService
       .createTextOutput(JSON.stringify({ok: true}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -807,6 +821,11 @@ async function confirmarFirma() {
 
   pagosHoy.push(registro);
   agregarAlLog(registro);
+
+  // Quitar proveedor de la lista
+  listaProvs = listaProvs.filter(p => p.nombre !== firmaActiva.proveedor);
+  localStorage.setItem('frankie_lista', JSON.stringify(listaProvs));
+  actualizarSelectProveedores();
 
   document.getElementById('proveedor').value = '';
   const display = document.getElementById('proveedorDisplay');

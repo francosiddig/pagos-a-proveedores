@@ -5,253 +5,130 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Frankie · Pagos</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #f5f5f5;
-    --surface: #ffffff;
-    --surface2: #f0f0f0;
-    --border: #ddd;
-    --accent: #d90015;
-    --accent2: #1a6fbf;
-    --danger: #d90015;
-    --text: #1a1a1a;
-    --text2: #666;
-    --text3: #aaa;
-    --radius: 12px;
-    --mono: 'DM Mono', monospace;
-    --sans: 'DM Sans', sans-serif;
-    --display: 'Syne', sans-serif;
-  }
+:root {
+  --bg: #f5f5f5;
+  --surface: #fff;
+  --surface2: #f0f0f0;
+  --border: #ddd;
+  --accent: #d90015;
+  --text: #1a1a1a;
+  --text2: #666;
+  --text3: #aaa;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --display: 'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; display: flex; flex-direction: column; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+/* MODAL */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+.overlay.hidden { display: none; }
+.modal { background: var(--surface); border-radius: 16px; padding: 32px 28px; width: 100%; max-width: 400px; }
+.modal h2 { font-family: var(--display); font-size: 22px; margin-bottom: 8px; }
+.modal p { color: var(--text2); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-family: var(--sans); font-size: 15px; color: var(--text); outline: none; -webkit-appearance: none; }
+.field input:focus { border-color: var(--accent); }
+.btn-red { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 15px; font-family: var(--display); font-size: 16px; font-weight: 800; cursor: pointer; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-  }
+/* HEADER */
+header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 10; }
+.logo { font-family: var(--display); font-size: 20px; font-weight: 800; color: var(--accent); }
+.logo span { font-size: 11px; color: var(--text2); margin-left: 6px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+.status { display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--mono); color: var(--text2); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #4cff91; box-shadow: 0 0 5px #4cff9166; }
+.btn-sm { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-family: var(--mono); color: var(--text2); cursor: pointer; }
 
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-    position: sticky; top: 0;
-    background: var(--bg); z-index: 100;
-  }
-  .logo { font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--accent); }
-  .logo span { color: var(--text2); font-weight: 700; font-size: 11px; margin-left: 7px; letter-spacing: 2px; text-transform: uppercase; }
-  .header-right { display: flex; align-items: center; gap: 10px; }
-  .sheet-status { display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--mono); color: var(--text2); }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
-  .dot.ok { background: #4cff91; box-shadow: 0 0 6px #4cff9166; }
-  .dot.err { background: var(--danger); }
+/* MAIN */
+main { flex: 1; display: grid; grid-template-columns: 360px 1fr; }
 
-  /* MODAL */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,.9);
-    backdrop-filter: blur(4px);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 999; padding: 16px;
-  }
-  .modal-overlay.hidden { display: none; }
-  .modal {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 16px; padding: 28px 24px;
-    width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
-    animation: slideUp .25s ease;
-  }
-  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
-  .modal h2 { font-family: var(--display); font-size: 20px; margin-bottom: 6px; }
-  .modal p { color: var(--text2); font-size: 13px; line-height: 1.6; margin-bottom: 16px; }
-  .modal ol { color: var(--text2); font-size: 12px; line-height: 1.9; padding-left: 16px; margin-bottom: 20px; }
-  .modal ol li b { color: var(--text); }
-  .modal a { color: var(--accent2); text-decoration: none; }
-  .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-  .field-group label { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
-  .field-group input {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 12px 14px; color: var(--text); font-family: var(--mono); font-size: 14px;
-    outline: none; transition: border-color .2s; -webkit-appearance: none;
-  }
-  .field-group input:focus { border-color: var(--accent); }
-  .field-group input::placeholder { color: var(--text3); }
+/* PANEL IZQUIERDO */
+.panel-left { border-right: 1px solid var(--border); padding: 24px 20px; display: flex; flex-direction: column; overflow-y: auto; }
+.section-title { font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 2px; color: var(--text3); margin-bottom: 16px; }
+.field select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-family: var(--sans); font-size: 15px; color: var(--text); outline: none; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.field select option { background: #fff; color: #1a1a1a; }
+.importe-wrap { position: relative; }
+.importe-wrap::before { content: "$"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text2); font-family: var(--mono); pointer-events: none; }
+.importe-wrap input { padding-left: 26px; font-family: var(--mono); font-size: 17px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
-  /* MAIN */
-  main { flex: 1; display: grid; grid-template-columns: 360px 1fr; min-height: 0; }
+/* LOG */
+.log-empty { color: var(--text3); font-size: 13px; font-style: italic; }
+.log-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px; }
+.log-item .chk { width: 18px; height: 18px; border-radius: 50%; background: #4cff9122; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.log-item .chk svg { width: 10px; height: 10px; stroke: #4cff91; }
+.log-item .prov { font-weight: 600; flex: 1; }
+.log-item .monto { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+.log-total { margin-top: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; display: flex; justify-content: space-between; align-items: center; }
+.log-total span { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; }
+.log-total strong { font-family: var(--mono); font-size: 17px; color: var(--accent); }
 
-  .panel-carga {
-    border-right: 1px solid var(--border);
-    padding: 22px 20px; display: flex; flex-direction: column; overflow-y: auto;
-  }
-  .panel-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--text3); margin-bottom: 16px; }
+/* PANEL DERECHO */
+.panel-right { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 20px; overflow-y: auto; }
+.idle { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--text3); }
+.idle .icon { font-size: 40px; opacity: .3; }
+.idle p { font-size: 13px; text-align: center; max-width: 200px; line-height: 1.6; }
 
-  .form-field { margin-bottom: 12px; }
-  .form-field label { display: block; font-size: 10px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
-  .form-field input, .form-field select {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 11px 13px; color: var(--text); font-family: var(--sans);
-    font-size: 15px; outline: none; transition: border-color .15s;
-    -webkit-appearance: none; appearance: none;
-  }
-  .form-field input:focus, .form-field select:focus { border-color: var(--accent); }
-  .form-field input::placeholder { color: var(--text3); }
-  .form-field select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
-  }
-  .form-field select option { background: #ffffff; color: #1a1a1a; }
-  .form-field select optgroup { background: #f0f0f0; color: #666; }
+/* FIRMA CARD */
+.firma-card { display: none; flex-direction: column; width: 100%; max-width: 520px; }
+.firma-card.active { display: flex; }
+.firma-header { background: var(--surface); border: 1px solid var(--border); border-bottom: none; border-radius: 12px 12px 0 0; padding: 20px 22px 18px; }
+.firma-greeting { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+.firma-nombre { font-family: var(--display); font-size: 26px; font-weight: 800; margin-bottom: 14px; }
+.firma-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.firma-item { background: var(--surface2); border-radius: 8px; padding: 9px 12px; }
+.firma-item .k { font-size: 9px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+.firma-item .v { font-size: 14px; font-weight: 600; }
+.firma-item.importe .v { font-family: var(--mono); font-size: 20px; color: var(--accent); }
+.firma-item.full { grid-column: 1/-1; }
+.canvas-wrap { background: var(--surface); border: 1px solid var(--border); border-top: 2px dashed var(--border); padding: 14px 16px 10px; }
+.canvas-label { font-size: 10px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+.btn-clear { background: none; border: none; color: var(--text3); font-size: 10px; font-family: var(--mono); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; padding: 4px 8px; }
+#firmaCanvas { width: 100%; height: 150px; background: #fff; border-radius: 8px; display: block; touch-action: none; border: 2px solid #ddd; cursor: crosshair; }
+.firma-footer { background: var(--surface); border: 1px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; padding: 14px 16px; display: flex; gap: 8px; }
+.btn-cancel { flex: 0 0 auto; background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text2); font-family: var(--sans); font-size: 14px; cursor: pointer; }
+.btn-confirm { flex: 1; background: var(--accent); border: none; border-radius: 8px; padding: 13px; color: #fff; font-family: var(--display); font-size: 16px; font-weight: 800; cursor: pointer; }
+.btn-confirm:disabled { opacity: .4; cursor: not-allowed; }
 
-  .importe-wrap { position: relative; }
-  .importe-wrap input { padding-left: 26px; font-family: var(--mono); font-size: 17px; font-weight: 500; }
-  .importe-wrap::before { content: "$"; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text2); font-family: var(--mono); font-size: 14px; pointer-events: none; }
+/* FIRMA OVERLAY (mobile) */
+.firma-overlay { display: none; background: var(--bg); min-height: 100vh; }
+.firma-overlay.active { display: block; }
+.firma-overlay-inner { display: flex; flex-direction: column; align-items: center; padding: 20px 16px 40px; }
 
-  .btn-firmar {
-    width: 100%; background: var(--accent); color: #fff; border: none;
-    border-radius: 10px; padding: 15px; font-family: var(--display); font-size: 16px;
-    font-weight: 800; cursor: pointer; margin-top: 6px;
-    box-shadow: 0 4px 20px #e8ff4733; -webkit-tap-highlight-color: transparent;
-  }
-  .btn-firmar:active { transform: scale(0.98); }
+/* TOAST */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 11px 18px; font-size: 13px; font-family: var(--mono); transition: transform .3s, opacity .3s; opacity: 0; z-index: 500; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.ok { border-color: #4cff9155; color: #4cff91; }
+.toast.err { border-color: #ff5c5c55; color: #ff5c5c; }
 
-  .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
-
-  .log-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--text3); margin-bottom: 10px; }
-  .log-list { display: flex; flex-direction: column; gap: 5px; }
-  .log-item {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 9px 11px; display: flex; align-items: center; gap: 8px; font-size: 13px;
-    animation: fadeIn .3s ease;
-  }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-  .log-item .prov { font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .log-item .monto { font-family: var(--mono); font-size: 12px; color: var(--accent); white-space: nowrap; }
-  .log-item .chk { width: 18px; height: 18px; border-radius: 50%; background: #4cff9122; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .log-item .chk svg { width: 10px; height: 10px; stroke: #4cff91; }
-  .log-empty { color: var(--text3); font-size: 12px; font-style: italic; }
-
-  .log-total { margin-top: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; display: flex; justify-content: space-between; align-items: center; }
-  .log-total span { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
-  .log-total strong { font-family: var(--mono); font-size: 17px; color: var(--accent); }
-
-  .btn-export { width: 100%; margin-top: 8px; background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 9px; color: var(--text2); font-family: var(--mono); font-size: 11px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .btn-export:active { border-color: var(--accent2); color: var(--accent2); }
-
-  /* PANEL FIRMA (desktop) */
-  .panel-firma { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 20px; overflow-y: auto; }
-  .firma-idle { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--text3); }
-  .firma-idle .icon { font-size: 40px; opacity: .3; }
-  .firma-idle p { font-size: 13px; text-align: center; max-width: 220px; line-height: 1.6; }
-
-  /* FIRMA CARD (usada tanto en desktop como overlay mobile) */
-  .firma-card { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 520px; }
-  .firma-card.active { display: flex; animation: slideUp .3s ease; }
-
-  .firma-header { width: 100%; background: var(--surface); border: 1px solid var(--border); border-bottom: none; border-radius: 12px 12px 0 0; padding: 20px 22px 18px; }
-  .firma-header .greeting { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
-  .firma-header .nombre { font-family: var(--display); font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 14px; }
-
-  .firma-detalle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .detalle-item { background: var(--surface2); border-radius: 8px; padding: 9px 12px; }
-  .detalle-item .key { font-size: 9px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
-  .detalle-item .val { font-size: 14px; font-weight: 600; color: var(--text); }
-  .detalle-item.importe .val { font-family: var(--mono); font-size: 20px; color: var(--accent); }
-  .detalle-item.full { grid-column: 1 / -1; }
-
-  .canvas-wrap { width: 100%; background: var(--surface); border: 1px solid var(--border); border-top: 2px dashed var(--border); padding: 14px 16px 10px; }
-  .canvas-label { font-size: 10px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-  .btn-limpiar { background: none; border: none; color: var(--text3); font-size: 10px; font-family: var(--mono); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; padding: 4px 8px; -webkit-tap-highlight-color: transparent; }
-
-  /* Canvas fondo BLANCO, trazo negro — se ve siempre */
-  #firmaCanvas { width: 100%; height: 150px; background: #ffffff; border-radius: 8px; cursor: crosshair; display: block; touch-action: none; border: 2px solid #ddd; }
-
-  .firma-footer { width: 100%; background: var(--surface); border: 1px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; padding: 14px 16px; display: flex; gap: 8px; }
-
-  .btn-cancelar { flex: 0 0 auto; background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text2); font-family: var(--sans); font-size: 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .btn-cancelar:active { border-color: var(--danger); color: var(--danger); }
-
-  .btn-confirmar { flex: 1; background: var(--accent); border: none; border-radius: 8px; padding: 13px; color: #fff; font-family: var(--display); font-size: 16px; font-weight: 800; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .btn-confirmar:active { opacity: .85; }
-  .btn-confirmar:disabled { opacity: .4; cursor: not-allowed; }
-
-  /* OVERLAY MOBILE */
-  .firma-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); overflow-y: auto; }
-  .firma-overlay.active { display: block; animation: slideUp .25s ease; }
-  .firma-overlay-inner { display: flex; flex-direction: column; align-items: center; padding: 20px 16px 40px; }
-
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 11px 18px; font-size: 13px; font-family: var(--mono); transition: transform .3s ease, opacity .3s; opacity: 0; z-index: 500; white-space: nowrap; }
-  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-  .toast.success { border-color: #4cff9155; color: #4cff91; }
-  .toast.error   { border-color: #ff5c5c55; color: var(--danger); }
-
-  .btn-setup { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; color: var(--text2); font-size: 12px; font-family: var(--mono); cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
-  .btn-primary { background: var(--accent); border: none; border-radius: 8px; padding: 13px 24px; color: #fff; font-family: var(--display); font-size: 15px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 4px; }
-
-  @media (max-width: 680px) {
-    main { grid-template-columns: 1fr; }
-    .panel-firma { display: none; }
-    .panel-carga { border-right: none; padding: 18px 16px; }
-  }
+@media (max-width: 680px) {
+  main { grid-template-columns: 1fr; }
+  .panel-right { display: none; }
+  .panel-left { border-right: none; padding: 18px 16px; }
+}
 </style>
 </head>
 <body>
 
-<!-- MODAL SETUP -->
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal" style="max-width:380px;">
+<!-- MODAL NOMBRE (solo primera vez) -->
+<div class="overlay" id="overlayNombre">
+  <div class="modal">
     <h2>Bienvenido a Frankie</h2>
     <p>Ingresá tu nombre para empezar. Solo se pide una vez en este dispositivo.</p>
-    <div class="field-group">
+    <div class="field">
       <label>Tu nombre</label>
-      <input type="text" id="registradorInput" placeholder="Ej: Franco, Matias..." />
+      <input type="text" id="inputNombre" placeholder="Ej: Franco, Matias..." autocomplete="off" />
     </div>
-    <button class="btn-primary" onclick="guardarConfig()">Entrar</button>
+    <button class="btn-red" onclick="guardarNombre()">Entrar</button>
   </div>
 </div>
 
-<!-- MODAL LISTA SEMANAL -->
-<div class="modal-overlay hidden" id="modalLista">
-  <div class="modal" style="max-width:560px;">
-    <h2>Lista semanal</h2>
-    <p>Cargá los proveedores, montos y día de cada semana. Se guardan en la app hasta que los actualices.</p>
-
-    <!-- Importar Excel -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-      <div>
-        <div style="font-size:12px;font-weight:600;margin-bottom:2px;">Importar desde Excel</div>
-        <div style="font-size:11px;color:var(--text2);">Columna B: proveedor · C: monto · D: día</div>
-      </div>
-      <label style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:var(--display);font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;">
-        ↑ Subir .xlsx
-        <input type="file" accept=".xlsx,.xls" onchange="importarExcel(this)" style="display:none;" />
-      </label>
-    </div>
-
-    <!-- Resumen por día -->
-    <div id="resumenDias" style="display:none;margin-bottom:16px;"></div>
-
-    <!-- Encabezado columnas -->
-    <div style="display:grid;grid-template-columns:1fr 120px 110px 28px;gap:6px;padding:0 0 6px 0;">
-      <span style="font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:1px;">Proveedor</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:1px;">Monto</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:1px;">Día</span>
-      <span></span>
-    </div>
-    <div id="listaProveedores" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:280px;overflow-y:auto;"></div>
-    <button onclick="agregarFilaProveedor()" style="background:none;border:1px dashed var(--border);border-radius:8px;padding:10px;width:100%;color:var(--text2);font-family:var(--mono);font-size:12px;cursor:pointer;margin-bottom:14px;">+ Agregar proveedor</button>
-    <button class="btn-primary" onclick="guardarLista()">Guardar lista</button>
-    <button onclick="limpiarLista()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:10px;width:100%;color:var(--text2);font-family:var(--mono);font-size:12px;cursor:pointer;margin-top:8px;">🗑 Limpiar lista</button>
-    <button onclick="document.getElementById('modalLista').classList.add('hidden')" style="background:none;border:none;color:var(--text3);font-size:12px;font-family:var(--mono);cursor:pointer;width:100%;margin-top:8px;padding:6px;">Cerrar</button>
-  </div>
-</div>
-
-<!-- OVERLAY FIRMA (mobile) -->
+<!-- FIRMA OVERLAY MOBILE -->
 <div class="firma-overlay" id="firmaOverlay">
   <div class="firma-overlay-inner" id="firmaOverlayInner"></div>
 </div>
@@ -260,67 +137,57 @@
 <header>
   <div class="logo">Frankie <span>Pagos</span></div>
   <div class="header-right">
-    <div class="sheet-status">
-      <div class="dot" id="statusDot"></div>
-      <span id="statusText" style="font-size:11px;font-family:var(--mono);">Sin configurar</span>
+    <div class="status">
+      <div class="dot"></div>
+      <span id="statusNombre"></span>
     </div>
-    <button class="btn-setup" onclick="abrirLista()">📋 Lista</button>
-    <button class="btn-setup" onclick="abrirSetup()">⚙ Config</button>
+    <button class="btn-sm" onclick="document.getElementById('overlayNombre').classList.remove('hidden')">⚙ Config</button>
   </div>
 </header>
 
 <!-- MAIN -->
 <main>
-  <div class="panel-carga">
-    <div class="panel-title">Nuevo pago</div>
-    <div class="form-field">
+  <div class="panel-left">
+    <div class="section-title">Nuevo pago</div>
+
+    <div class="field">
       <label>Proveedor</label>
-      <div style="position:relative;">
-        <div id="proveedorDisplay" onclick="toggleDropdown()"
-          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 36px 11px 13px;color:var(--text2);font-family:var(--sans);font-size:15px;cursor:pointer;user-select:none;position:relative;">
-          — Seleccioná un proveedor —
-        </div>
-        <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text2);">▾</div>
-        <div id="proveedorDropdown"
-          style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;z-index:300;max-height:260px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.12);">
-        </div>
-      </div>
-      <input type="hidden" id="proveedor" />
+      <input type="text" id="inputProveedor" placeholder="Nombre del proveedor" autocomplete="off" />
     </div>
-    <div class="form-field">
+    <div class="field">
       <label>Cobrador / Quien retira</label>
-      <input type="text" id="cobrador" placeholder="Nombre de quien retira" autocomplete="off" />
+      <input type="text" id="inputCobrador" placeholder="Nombre de quien retira" autocomplete="off" />
     </div>
-    <div class="form-field">
+    <div class="field">
       <label>Importe</label>
       <div class="importe-wrap">
-        <input type="number" id="importe" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
+        <input type="number" id="inputImporte" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
       </div>
     </div>
-    <div class="form-field">
+    <div class="field">
       <label>Forma de pago</label>
-      <select id="formaPago">
+      <select id="inputFormaPago">
         <option value="Efectivo">Efectivo</option>
         <option value="Transferencia">Transferencia</option>
         <option value="Cheque">Cheque</option>
         <option value="Otro">Otro</option>
       </select>
     </div>
-    <button class="btn-firmar" onclick="iniciarFirma()">Llamar a firmar →</button>
+
+    <button class="btn-red" onclick="iniciarFirma()">Llamar a firmar →</button>
+
     <hr class="divider">
-    <div class="log-title">Pagos del día</div>
-    <div class="log-list" id="logList">
-      <div class="log-empty" id="logEmpty">Ningún pago registrado aún</div>
-    </div>
+
+    <div class="section-title">Pagos del día</div>
+    <div id="logList"><div class="log-empty">Ningún pago registrado aún</div></div>
     <div class="log-total" id="logTotal" style="display:none;">
       <span>Total</span>
       <strong id="totalMonto">$0</strong>
     </div>
-    <button class="btn-export" id="btnExport" style="display:none;" onclick="exportarCSV()">↓ Exportar CSV del día</button>
   </div>
 
-  <div class="panel-firma">
-    <div class="firma-idle" id="firmaIdle">
+  <div class="panel-right">
+    <div class="idle" id="idle">
       <div class="icon">✍️</div>
       <p>Completá los datos y hacé clic en <b>Llamar a firmar</b></p>
     </div>
@@ -331,414 +198,104 @@
 <div class="toast" id="toast"></div>
 
 <script>
-let config = { url: 'https://script.google.com/macros/s/AKfycbwHcMwHEuQ2lA8UmkVXjujtP_Onr0cmx0Zy40EZCUQQ2fMWL0seSWbaeIf-pp9hjvQOfg/exec', registrador: '' };
-let pagosHoy = [];
+// ── Config ────────────────────────────────────────────────────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHcMwHEuQ2lA8UmkVXjujtP_Onr0cmx0Zy40EZCUQQ2fMWL0seSWbaeIf-pp9hjvQOfg/exec';
+
+let nombre = '';
 let firmaActiva = null;
 let canvasEl = null, ctx = null, dibujando = false, firmaTrazada = false;
-let listaProvs = [];
 
 window.onload = () => {
-  const saved = localStorage.getItem('frankie_config');
-  if (saved) {
-    const parsed = JSON.parse(saved);
-    config.registrador = parsed.registrador || '';
-  }
-  if (!config.registrador) {
-    document.getElementById('modalOverlay').classList.remove('hidden');
-  } else {
-    document.getElementById('modalOverlay').classList.add('hidden');
-    actualizarStatus(true);
-    sincronizarDesdeSheets();
-    setInterval(sincronizarDesdeSheets, 30000);
-  }
-  const savedLista = localStorage.getItem('frankie_lista');
-  if (savedLista) {
-    listaProvs = JSON.parse(savedLista);
-    actualizarSelectProveedores();
+  nombre = localStorage.getItem('frankie_nombre') || '';
+  if (nombre) {
+    document.getElementById('overlayNombre').classList.add('hidden');
+    document.getElementById('statusNombre').textContent = nombre;
   }
 };
 
-const isMobile = () => window.innerWidth <= 680;
-
-function getFecha() {
-  return new Date().toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long' });
-}
-
-function abrirSetup() {
-  document.getElementById('modalOverlay').classList.remove('hidden');
-  if (config.registrador) document.getElementById('registradorInput').value = config.registrador;
-}
-
-function guardarConfig() {
-  const reg = document.getElementById('registradorInput').value.trim();
-  if (!reg) { showToast('Ingresá tu nombre', 'error'); return; }
-  config.registrador = reg;
-  localStorage.setItem('frankie_config', JSON.stringify(config));
-  document.getElementById('modalOverlay').classList.add('hidden');
-  actualizarStatus(true);
-  sincronizarDesdeSheets();
-  setInterval(sincronizarDesdeSheets, 30000);
-  showToast('Bienvenido ' + reg, 'success');
-}
-
-function actualizarStatus(ok) {
-  document.getElementById('statusDot').className = 'dot ' + (ok ? 'ok' : 'err');
-  document.getElementById('statusText').textContent = ok ? 'Conectado · ' + config.registrador : 'Sin configurar';
-}
-
-function copyScript() {
-  navigator.clipboard.writeText(document.getElementById('scriptCode').textContent);
-  showToast('Script copiado ✓', 'success');
-}
-
-// ── Construir HTML de firma ───────────────────────────────────────────────────
-function firmaHTML(f) {
-  return `
-    <div class="firma-header">
-      <div class="greeting">Por favor firmá tu recibo</div>
-      <div class="nombre">${f.proveedor}</div>
-      <div class="firma-detalle">
-        <div class="detalle-item importe">
-          <div class="key">Importe</div>
-          <div class="val">$${Number(f.importe).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>
-        </div>
-        <div class="detalle-item">
-          <div class="key">Forma de pago</div>
-          <div class="val">${f.formaPago}</div>
-        </div>
-        <div class="detalle-item full">
-          <div class="key">Cobrador / Quien retira</div>
-          <div class="val">${f.cobrador}</div>
-        </div>
-        <div class="detalle-item full">
-          <div class="key">Fecha</div>
-          <div class="val">${getFecha()}</div>
-        </div>
-      </div>
-    </div>
-    <div class="canvas-wrap">
-      <div class="canvas-label">
-        <span>Firmá abajo</span>
-        <button class="btn-limpiar" onclick="limpiarFirma()">Limpiar</button>
-      </div>
-      <canvas id="firmaCanvas"></canvas>
-    </div>
-    <div class="firma-footer">
-      <button class="btn-cancelar" onclick="cancelarFirma()">Cancelar</button>
-      <button class="btn-confirmar" id="btnConfirmar" onclick="confirmarFirma()">Confirmar cobro</button>
-    </div>`;
+function guardarNombre() {
+  const v = document.getElementById('inputNombre').value.trim();
+  if (!v) { toast('Ingresá tu nombre', 'err'); return; }
+  nombre = v;
+  localStorage.setItem('frankie_nombre', v);
+  document.getElementById('overlayNombre').classList.add('hidden');
+  document.getElementById('statusNombre').textContent = v;
+  toast('Bienvenido ' + v, 'ok');
 }
 
 // ── Canvas ────────────────────────────────────────────────────────────────────
 function initCanvas() {
   canvasEl = document.getElementById('firmaCanvas');
   if (!canvasEl) return;
-  dibujando = false;
-  firmaTrazada = false;
-
-  // Esperar que el layout termine para leer dimensiones reales
+  firmaTrazada = false; dibujando = false;
   requestAnimationFrame(() => {
-    const dpr  = window.devicePixelRatio || 1;
-    const rect = canvasEl.getBoundingClientRect();
-    canvasEl.width  = Math.round(rect.width  * dpr);
-    canvasEl.height = Math.round(rect.height * dpr);
+    const dpr = window.devicePixelRatio || 1;
+    const r = canvasEl.getBoundingClientRect();
+    canvasEl.width = Math.round(r.width * dpr);
+    canvasEl.height = Math.round(r.height * dpr);
     ctx = canvasEl.getContext('2d');
     ctx.scale(dpr, dpr);
-    ctx.strokeStyle = '#111111';
-    ctx.lineWidth   = 2.5;
-    ctx.lineCap     = 'round';
-    ctx.lineJoin    = 'round';
-
-    const pos = (e) => {
-      const r   = canvasEl.getBoundingClientRect();
-      const src = e.touches ? e.touches[0] : e;
-      return { x: src.clientX - r.left, y: src.clientY - r.top };
-    };
-
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const pos = e => { const r = canvasEl.getBoundingClientRect(), s = e.touches ? e.touches[0] : e; return { x: s.clientX - r.left, y: s.clientY - r.top }; };
     canvasEl.addEventListener('pointerdown', e => { e.preventDefault(); dibujando = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
     canvasEl.addEventListener('pointermove', e => { e.preventDefault(); if (!dibujando) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); firmaTrazada = true; });
-    canvasEl.addEventListener('pointerup',    e => { e.preventDefault(); dibujando = false; });
+    canvasEl.addEventListener('pointerup', e => { e.preventDefault(); dibujando = false; });
     canvasEl.addEventListener('pointerleave', e => { e.preventDefault(); dibujando = false; });
   });
 }
 
 function limpiarFirma() {
-  if (!canvasEl || !ctx) return;
-  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-  firmaTrazada = false;
+  if (ctx) { ctx.clearRect(0, 0, canvasEl.width, canvasEl.height); firmaTrazada = false; }
 }
 
-function importarExcel(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const wb   = XLSX.read(e.target.result, { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-
-      const contenedor = document.getElementById('listaProveedores');
-      contenedor.innerHTML = '';
-      let count = 0;
-
-      rows.forEach(row => {
-        const nombre = String(row[1] || '').trim();  // col B
-        const monto  = parseFloat(row[2]) * 1000000;            // col C, en millones
-        const diaRaw = String(row[3] || '').trim().toLowerCase(); // col D
-
-        if (!nombre || isNaN(monto) || monto <= 0) return;
-
-        // Normalizar día
-        const diaMap = { 'lunes':'lunes','martes':'martes','miercoles':'miércoles','miércoles':'miércoles','jueves':'jueves','viernes':'viernes','sabado':'sábado','sábado':'sábado' };
-        const dia = diaMap[diaRaw] || 'sin día';
-
-        agregarFilaProveedor(nombre, monto, dia);
-        count++;
-      });
-
-      mostrarResumenDias();
-      showToast(`${count} proveedores importados`, 'success');
-    } catch(err) {
-      showToast('Error al leer el archivo', 'error');
-      console.error(err);
-    }
-    input.value = ''; // reset para poder subir el mismo archivo de nuevo
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-async function sincronizarDesdeSheets() {
-  if (!config.url) return;
-  try {
-    const res  = await fetch(config.url + '?action=sync&fecha=' + encodeURIComponent(new Date().toLocaleDateString('es-AR')), { method: 'GET', mode: 'cors' });
-    const data = await res.json();
-
-    // Actualizar lista de proveedores
-    if (data.lista && data.lista.length >= 0) {
-      listaProvs = data.lista;
-      localStorage.setItem('frankie_lista', JSON.stringify(listaProvs));
-      actualizarSelectProveedores();
-    }
-
-    // Actualizar pagos del día
-    if (data.pagos) {
-      renderizarPagos(data.pagos);
-    }
-  } catch(e) { console.log('Error sincronizando', e); }
-}
-
-// Mantener compatibilidad
-async function cargarListaDesdeSheets() { await sincronizarDesdeSheets(); }
-
-function renderizarPagos(pagos) {
-  const logList = document.getElementById('logList');
-  const logEmpty = document.getElementById('logEmpty');
-  logList.innerHTML = '';
-  if (!pagos.length) {
-    logList.appendChild(logEmpty);
-    logEmpty.style.display = 'block';
-    document.getElementById('logTotal').style.display = 'none';
-    document.getElementById('btnExport').style.display = 'none';
-    return;
-  }
-  logEmpty.style.display = 'none';
-  pagos.forEach(p => {
-    const item = document.createElement('div');
-    item.className = 'log-item';
-    item.innerHTML = `<div class="chk"><svg viewBox="0 0 12 12" fill="none" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg></div><span class="prov">${p.proveedor}</span><span class="monto">$${Number(p.importe).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>`;
-    logList.appendChild(item);
-  });
-  const total = pagos.reduce((s,p) => s + Number(p.importe), 0);
-  document.getElementById('totalMonto').textContent = '$' + total.toLocaleString('es-AR',{minimumFractionDigits:2});
-  document.getElementById('logTotal').style.display = 'flex';
-  document.getElementById('btnExport').style.display = 'block';
-  // Sync local
-  pagosHoy = pagos;
-}
-
-function limpiarLista() {
-  if (!confirm('¿Borrar toda la lista? Vas a tener que reimportar.')) return;
-  listaProvs = [];
-  localStorage.removeItem('frankie_lista');
-  actualizarSelectProveedores();
-  document.getElementById('listaProveedores').innerHTML = '';
-  document.getElementById('resumenDias').style.display = 'none';
-  showToast('Lista borrada', 'success');
-}
-
-// ── Lista semanal ─────────────────────────────────────────────────────────────
-const DIAS = ['lunes','martes','miércoles','jueves','viernes','sábado','sin día'];
-const DIAS_ORD = { 'lunes':0,'martes':1,'miércoles':2,'jueves':3,'viernes':4,'sábado':5,'sin día':6 };
-
-function abrirLista() {
-  const contenedor = document.getElementById('listaProveedores');
-  contenedor.innerHTML = '';
-  const lista = listaProvs.length ? listaProvs : [{ nombre:'', monto:'', dia:'sin día' }];
-  lista.forEach(p => agregarFilaProveedor(p.nombre, p.monto, p.dia || 'sin día'));
-  mostrarResumenDias();
-  document.getElementById('modalLista').classList.remove('hidden');
-}
-
-function agregarFilaProveedor(nombre='', monto='', dia='sin día') {
-  const contenedor = document.getElementById('listaProveedores');
-  const fila = document.createElement('div');
-  fila.style.cssText = 'display:grid;grid-template-columns:1fr 120px 110px 28px;gap:6px;align-items:center;';
-  const diaOpts = DIAS.map(d => `<option value="${d}" ${d===dia?'selected':''}>${d}</option>`).join('');
-  fila.innerHTML = `
-    <input type="text" placeholder="Proveedor" value="${nombre}"
-      style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;width:100%;" />
-    <input type="number" placeholder="Ej: 2 = $2M" value="${monto ? monto/1000000 : ''}" inputmode="decimal"
-      style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;width:100%;" />
-    <select style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 8px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;width:100%;-webkit-appearance:none;appearance:none;">
-      ${diaOpts}
-    </select>
-    <button onclick="this.parentElement.remove();mostrarResumenDias()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;line-height:1;text-align:center;">×</button>
-  `;
-  contenedor.appendChild(fila);
-}
-
-function mostrarResumenDias() {
-  // Lee el estado actual de las filas para mostrar resumen en tiempo real
-  const filas = document.querySelectorAll('#listaProveedores > div');
-  const totalesDia = {};
-  filas.forEach(fila => {
-    const inputs = fila.querySelectorAll('input');
-    const sel    = fila.querySelector('select');
-    const monto  = (parseFloat(inputs[1]?.value) || 0) * 1000000;
-    const dia    = sel?.value || 'sin día';
-    if (monto > 0) totalesDia[dia] = (totalesDia[dia] || 0) + monto;
-  });
-
-  const resumen = document.getElementById('resumenDias');
-  const diasConData = Object.keys(totalesDia).sort((a,b) => (DIAS_ORD[a]??9) - (DIAS_ORD[b]??9));
-  if (!diasConData.length) { resumen.style.display='none'; return; }
-
-  resumen.style.display = 'flex';
-  resumen.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;';
-  resumen.innerHTML = diasConData.map(dia => `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;">
-      <span style="font-size:9px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:1px;">${dia}</span>
-      <span style="font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:600;">$${totalesDia[dia].toLocaleString('es-AR',{minimumFractionDigits:0})}</span>
+// ── Firma HTML ────────────────────────────────────────────────────────────────
+function firmaHTML(f) {
+  return `
+    <div class="firma-header">
+      <div class="firma-greeting">Por favor firmá tu recibo</div>
+      <div class="firma-nombre">${f.proveedor}</div>
+      <div class="firma-grid">
+        <div class="firma-item importe"><div class="k">Importe</div><div class="v">$${Number(f.importe).toLocaleString('es-AR',{minimumFractionDigits:2})}</div></div>
+        <div class="firma-item"><div class="k">Forma de pago</div><div class="v">${f.formaPago}</div></div>
+        <div class="firma-item full"><div class="k">Cobrador</div><div class="v">${f.cobrador}</div></div>
+        <div class="firma-item full"><div class="k">Fecha</div><div class="v">${new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})}</div></div>
+      </div>
     </div>
-  `).join('');
+    <div class="canvas-wrap">
+      <div class="canvas-label"><span>Firmá abajo</span><button class="btn-clear" onclick="limpiarFirma()">Limpiar</button></div>
+      <canvas id="firmaCanvas"></canvas>
+    </div>
+    <div class="firma-footer">
+      <button class="btn-cancel" onclick="cancelarFirma()">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm" onclick="confirmarFirma()">Confirmar cobro</button>
+    </div>`;
 }
 
-function guardarLista() {
-  const filas = document.querySelectorAll('#listaProveedores > div');
-  listaProvs = [];
-  filas.forEach(fila => {
-    const inputs = fila.querySelectorAll('input');
-    const sel    = fila.querySelector('select');
-    const nombre = inputs[0].value.trim();
-    const monto  = parseFloat(inputs[1].value) * 1000000;
-    const dia    = sel?.value || 'sin día';
-    if (nombre && monto > 0) listaProvs.push({ nombre, monto, dia });
-  });
-  listaProvs.sort((a,b) => (DIAS_ORD[a.dia]??9) - (DIAS_ORD[b.dia]??9));
-  localStorage.setItem('frankie_lista', JSON.stringify(listaProvs));
-  actualizarSelectProveedores();
-  document.getElementById('modalLista').classList.add('hidden');
-  showToast(`Lista guardada · ${listaProvs.length} proveedores`, 'success');
+const isMobile = () => window.innerWidth <= 680;
 
-  // Sincronizar con Sheets
-  if (config.url) {
-    fetch(config.url, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo: 'lista', lista: listaProvs })
-    }).catch(e => console.error(e));
-  }
-}
-
-function actualizarSelectProveedores() {
-  const dropdown = document.getElementById('proveedorDropdown');
-  if (!dropdown) return;
-  dropdown.innerHTML = '';
-
-  // Opción vacía
-  const empty = document.createElement('div');
-  empty.textContent = '— Seleccioná un proveedor —';
-  empty.style.cssText = 'padding:11px 14px;color:var(--text2);font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);';
-  empty.onclick = () => seleccionarProveedor('', '', '');
-  dropdown.appendChild(empty);
-
-  const dias = [...new Set(listaProvs.map(p => p.dia))];
-  dias.forEach(dia => {
-    const grupo = listaProvs.filter(p => p.dia === dia);
-    if (!grupo.length) return;
-
-    // Cabecera de grupo
-    const header = document.createElement('div');
-    header.textContent = dia.charAt(0).toUpperCase() + dia.slice(1);
-    header.style.cssText = 'padding:7px 14px;font-size:10px;font-family:var(--mono);color:var(--text2);text-transform:uppercase;letter-spacing:1px;background:var(--surface2);border-bottom:1px solid var(--border);';
-    dropdown.appendChild(header);
-
-    grupo.forEach(p => {
-      const item = document.createElement('div');
-      item.style.cssText = 'padding:11px 14px;font-size:14px;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;';
-      item.innerHTML = `<span>${p.nombre}</span><span style="font-family:var(--mono);font-size:12px;color:var(--accent);">$${Number(p.monto).toLocaleString('es-AR',{minimumFractionDigits:0})}</span>`;
-      item.ontouchstart = () => {};  // iOS hover fix
-      item.onmouseenter = () => item.style.background = 'var(--surface2)';
-      item.onmouseleave = () => item.style.background = '';
-      item.onclick = () => seleccionarProveedor(p.nombre, p.monto, dia);
-      dropdown.appendChild(item);
-    });
-  });
-}
-
-function seleccionarProveedor(nombre, monto, dia) {
-  document.getElementById('proveedor').value = nombre;
-  const display = document.getElementById('proveedorDisplay');
-  display.textContent = nombre || '— Seleccioná un proveedor —';
-  display.style.color = nombre ? 'var(--text)' : 'var(--text2)';
-  document.getElementById('importe').value = monto || '';
-  document.getElementById('proveedorDropdown').style.display = 'none';
-}
-
-function toggleDropdown() {
-  const dd = document.getElementById('proveedorDropdown');
-  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
-}
-
-// Cerrar dropdown al tocar afuera
-document.addEventListener('click', e => {
-  const wrap = document.getElementById('proveedorDisplay')?.parentElement;
-  if (wrap && !wrap.contains(e.target)) {
-    const dd = document.getElementById('proveedorDropdown');
-    if (dd) dd.style.display = 'none';
-  }
-});
-
-function autocargarMonto() { /* handled by seleccionarProveedor */ }
-
-// ── Flujo ─────────────────────────────────────────────────────────────────────
 function iniciarFirma() {
-  const sel   = document.getElementById('proveedor');
-  const prov  = sel.value.trim();
-  const cob   = document.getElementById('cobrador').value.trim();
-  const imp   = parseFloat(document.getElementById('importe').value);
-  const forma = document.getElementById('formaPago').value;
-
-  if (!prov)            { showToast('Falta el nombre del proveedor', 'error'); return; }
-  if (!cob)             { showToast('Falta el nombre del cobrador',  'error'); return; }
-  if (!imp || imp <= 0) { showToast('Ingresá un importe válido',     'error'); return; }
+  const prov = document.getElementById('inputProveedor').value.trim();
+  const cob  = document.getElementById('inputCobrador').value.trim();
+  const imp  = parseFloat(document.getElementById('inputImporte').value);
+  const forma = document.getElementById('inputFormaPago').value;
+  if (!prov) { toast('Falta el proveedor', 'err'); return; }
+  if (!cob)  { toast('Falta el cobrador', 'err');  return; }
+  if (!imp || imp <= 0) { toast('Ingresá un importe válido', 'err'); return; }
 
   firmaActiva = { proveedor: prov, cobrador: cob, importe: imp, formaPago: forma };
-  const html  = firmaHTML(firmaActiva);
+  const html = firmaHTML(firmaActiva);
 
   if (isMobile()) {
-    const inner = document.getElementById('firmaOverlayInner');
-    inner.innerHTML = `<div style="width:100%;max-width:520px;">${html}</div>`;
+    document.getElementById('firmaOverlayInner').innerHTML = `<div style="width:100%;max-width:520px;">${html}</div>`;
     document.getElementById('firmaOverlay').classList.add('active');
-    document.getElementById('firmaOverlay').scrollTop = 0;
+    document.querySelector('header').style.display = 'none';
+    document.querySelector('main').style.display = 'none';
+    window.scrollTo(0, 0);
   } else {
-    const card = document.getElementById('firmaCard');
-    card.innerHTML = html;
-    card.classList.add('active');
-    document.getElementById('firmaIdle').style.display = 'none';
+    document.getElementById('firmaCard').innerHTML = html;
+    document.getElementById('firmaCard').classList.add('active');
+    document.getElementById('idle').style.display = 'none';
   }
-
   requestAnimationFrame(() => initCanvas());
 }
 
@@ -746,94 +303,77 @@ function cancelarFirma() {
   firmaActiva = null; firmaTrazada = false;
   if (isMobile()) {
     document.getElementById('firmaOverlay').classList.remove('active');
+    document.querySelector('header').style.display = '';
+    document.querySelector('main').style.display = '';
   } else {
-    const card = document.getElementById('firmaCard');
-    card.classList.remove('active'); card.innerHTML = '';
-    document.getElementById('firmaIdle').style.display = 'flex';
+    document.getElementById('firmaCard').classList.remove('active');
+    document.getElementById('firmaCard').innerHTML = '';
+    document.getElementById('idle').style.display = 'flex';
   }
 }
 
 async function confirmarFirma() {
-  if (!firmaTrazada) { showToast('El cobrador debe firmar primero', 'error'); return; }
-  const btn = document.getElementById('btnConfirmar');
+  if (!firmaTrazada) { toast('El cobrador debe firmar primero', 'err'); return; }
+  const btn = document.getElementById('btnConfirm');
   btn.disabled = true; btn.textContent = 'Guardando...';
 
   const firmaImg = canvasEl.toDataURL('image/png');
-  const ahora    = new Date();
-  const registro = {
+  const ahora = new Date();
+  const reg = {
     fecha: ahora.toLocaleDateString('es-AR'),
-    hora:  ahora.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}),
-    proveedor: firmaActiva.proveedor, cobrador: firmaActiva.cobrador,
-    importe: firmaActiva.importe, formaPago: firmaActiva.formaPago,
-    registradoPor: config.registrador, firma: firmaImg
+    hora: ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),
+    proveedor: firmaActiva.proveedor,
+    cobrador: firmaActiva.cobrador,
+    importe: firmaActiva.importe,
+    formaPago: firmaActiva.formaPago,
+    registradoPor: nombre,
+    firma: firmaImg
   };
 
   let ok = false;
-  if (config.url) {
+  if (SCRIPT_URL && SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbwHcMwHEuQ2lA8UmkVXjujtP_Onr0cmx0Zy40EZCUQQ2fMWL0seSWbaeIf-pp9hjvQOfg/exec') {
     try {
-      await fetch(config.url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(registro) });
+      await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(reg) });
       ok = true;
     } catch(e) { console.error(e); }
   }
 
-  pagosHoy.push(registro);
-  agregarAlLog(registro);
+  agregarAlLog(reg);
 
-  // Quitar proveedor de la lista y sincronizar con Sheets
-  listaProvs = listaProvs.filter(p => p.nombre !== firmaActiva.proveedor);
-  localStorage.setItem('frankie_lista', JSON.stringify(listaProvs));
-  actualizarSelectProveedores();
-
-  // Sincronizar lista actualizada con Sheets para que otros dispositivos la vean
-  if (config.url) {
-    fetch(config.url, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo: 'lista', lista: listaProvs })
-    }).catch(e => console.error(e));
-  }
-
-  document.getElementById('proveedor').value = '';
-  const display = document.getElementById('proveedorDisplay');
-  if (display) { display.textContent = '— Seleccioná un proveedor —'; display.style.color = 'var(--text2)'; }
-  document.getElementById('cobrador').value  = '';
-  document.getElementById('importe').value   = '';
+  document.getElementById('inputProveedor').value = '';
+  document.getElementById('inputCobrador').value = '';
+  document.getElementById('inputImporte').value = '';
   firmaActiva = null; firmaTrazada = false;
 
   if (isMobile()) {
     document.getElementById('firmaOverlay').classList.remove('active');
+    document.querySelector('header').style.display = '';
+    document.querySelector('main').style.display = '';
   } else {
-    const card = document.getElementById('firmaCard');
-    card.classList.remove('active'); card.innerHTML = '';
-    document.getElementById('firmaIdle').style.display = 'flex';
+    document.getElementById('firmaCard').classList.remove('active');
+    document.getElementById('firmaCard').innerHTML = '';
+    document.getElementById('idle').style.display = 'flex';
   }
 
-  showToast(ok ? '✓ Guardado en Google Sheets' : '✓ Guardado localmente', 'success');
+  toast(ok ? '✓ Guardado en Sheets' : '✓ Guardado localmente', 'ok');
 }
 
 function agregarAlLog(reg) {
-  document.getElementById('logEmpty').style.display = 'none';
+  const list = document.getElementById('logList');
+  const empty = list.querySelector('.log-empty');
+  if (empty) empty.remove();
   const item = document.createElement('div');
   item.className = 'log-item';
   item.innerHTML = `<div class="chk"><svg viewBox="0 0 12 12" fill="none" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg></div><span class="prov">${reg.proveedor}</span><span class="monto">$${Number(reg.importe).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>`;
-  document.getElementById('logList').appendChild(item);
-  const total = pagosHoy.reduce((s,p) => s + Number(p.importe), 0);
+  list.appendChild(item);
+  const items = list.querySelectorAll('.log-item');
+  let total = 0;
+  items.forEach(i => { const m = i.querySelector('.monto').textContent.replace('$','').replace(/\./g,'').replace(',','.'); total += parseFloat(m) || 0; });
   document.getElementById('totalMonto').textContent = '$' + total.toLocaleString('es-AR',{minimumFractionDigits:2});
   document.getElementById('logTotal').style.display = 'flex';
-  document.getElementById('btnExport').style.display = 'block';
 }
 
-function exportarCSV() {
-  const cols = ['Fecha','Hora','Proveedor','Cobrador','Importe','Forma de Pago','Registrado por'];
-  const rows = pagosHoy.map(p => [p.fecha, p.hora, p.proveedor, p.cobrador, p.importe, p.formaPago, p.registradoPor].join(','));
-  const csv  = [cols.join(','), ...rows].join('\n');
-  const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
-  a.download = `pagos_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-}
-
-function showToast(msg, type='') {
+function toast(msg, type='') {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = `toast ${type} show`;
   setTimeout(() => t.className = `toast ${type}`, 2800);

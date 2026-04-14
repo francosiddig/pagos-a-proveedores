@@ -331,7 +331,7 @@ async function confirmarFirma() {
   };
 
   let ok = false;
-  if (SCRIPT_URL && SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbxZ669oFsCMq4B2hYAQ1AEp3SnKliv7z2Gx1YNI5zNmQYYYYrv7_ammfyVOc_OsgSkAxQ/exec') {
+  if (SCRIPT_URL) {
     try {
       await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(reg) });
       ok = true;

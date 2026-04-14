@@ -269,21 +269,41 @@
 function doGet(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Lista de proveedores
     var hojaLista = ss.getSheetByName('Lista');
-    if (!hojaLista) return ContentService
-      .createTextOutput(JSON.stringify({ok: true, lista: []}))
-      .setMimeType(ContentService.MimeType.JSON);
-    var rows = hojaLista.getDataRange().getValues();
     var lista = [];
-    for (var i = 1; i < rows.length; i++) {
-      if (rows[i][0]) lista.push({nombre: rows[i][0], monto: rows[i][1], dia: rows[i][2]});
+    if (hojaLista) {
+      var rowsL = hojaLista.getDataRange().getValues();
+      for (var i = 1; i < rowsL.length; i++) {
+        if (rowsL[i][0]) lista.push({nombre: rowsL[i][0], monto: rowsL[i][1], dia: rowsL[i][2]});
+      }
     }
+
+    // Pagos del día de hoy
+    var fecha = e && e.parameter && e.parameter.fecha ? e.parameter.fecha : '';
+    var pagos = [];
+    var hojaPagos = ss.getSheetByName('Pagos') || ss.getActiveSheet();
+    if (fecha && hojaPagos.getLastRow() > 1) {
+      var rowsP = hojaPagos.getDataRange().getValues();
+      for (var j = 1; j < rowsP.length; j++) {
+        if (String(rowsP[j][0]) === fecha) {
+          pagos.push({
+            fecha: rowsP[j][0], hora: rowsP[j][1],
+            proveedor: rowsP[j][2], cobrador: rowsP[j][3],
+            importe: rowsP[j][4], formaPago: rowsP[j][5],
+            registradoPor: rowsP[j][6]
+          });
+        }
+      }
+    }
+
     return ContentService
-      .createTextOutput(JSON.stringify({ok: true, lista: lista}))
+      .createTextOutput(JSON.stringify({ok: true, lista: lista, pagos: pagos}))
       .setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
     return ContentService
-      .createTextOutput(JSON.stringify({ok: false, lista: []}))
+      .createTextOutput(JSON.stringify({ok: false, lista: [], pagos: []}))
       .setMimeType(ContentService.MimeType.JSON);
   }
 }</pre>
@@ -429,7 +449,8 @@ window.onload = () => {
     config = JSON.parse(saved);
     document.getElementById('modalOverlay').classList.add('hidden');
     actualizarStatus(true);
-    cargarListaDesdeSheets();
+    sincronizarDesdeSheets();
+    setInterval(sincronizarDesdeSheets, 30000);
   }
   const savedLista = localStorage.getItem('frankie_lista');
   if (savedLista) {
@@ -588,17 +609,53 @@ function importarExcel(input) {
   reader.readAsArrayBuffer(file);
 }
 
-async function cargarListaDesdeSheets() {
+async function sincronizarDesdeSheets() {
   if (!config.url) return;
   try {
-    const res  = await fetch(config.url, { method: 'GET', mode: 'cors' });
+    const res  = await fetch(config.url + '?action=sync&fecha=' + encodeURIComponent(new Date().toLocaleDateString('es-AR')), { method: 'GET', mode: 'cors' });
     const data = await res.json();
-    if (data.ok && data.lista.length) {
+
+    // Actualizar lista de proveedores
+    if (data.lista && data.lista.length >= 0) {
       listaProvs = data.lista;
       localStorage.setItem('frankie_lista', JSON.stringify(listaProvs));
       actualizarSelectProveedores();
     }
-  } catch(e) { console.log('No se pudo cargar lista desde Sheets', e); }
+
+    // Actualizar pagos del día
+    if (data.pagos) {
+      renderizarPagos(data.pagos);
+    }
+  } catch(e) { console.log('Error sincronizando', e); }
+}
+
+// Mantener compatibilidad
+async function cargarListaDesdeSheets() { await sincronizarDesdeSheets(); }
+
+function renderizarPagos(pagos) {
+  const logList = document.getElementById('logList');
+  const logEmpty = document.getElementById('logEmpty');
+  logList.innerHTML = '';
+  if (!pagos.length) {
+    logList.appendChild(logEmpty);
+    logEmpty.style.display = 'block';
+    document.getElementById('logTotal').style.display = 'none';
+    document.getElementById('btnExport').style.display = 'none';
+    return;
+  }
+  logEmpty.style.display = 'none';
+  pagos.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'log-item';
+    item.innerHTML = `<div class="chk"><svg viewBox="0 0 12 12" fill="none" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg></div><span class="prov">${p.proveedor}</span><span class="monto">$${Number(p.importe).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>`;
+    logList.appendChild(item);
+  });
+  const total = pagos.reduce((s,p) => s + Number(p.importe), 0);
+  document.getElementById('totalMonto').textContent = '$' + total.toLocaleString('es-AR',{minimumFractionDigits:2});
+  document.getElementById('logTotal').style.display = 'flex';
+  document.getElementById('btnExport').style.display = 'block';
+  // Sync local
+  pagosHoy = pagos;
 }
 
 function limpiarLista() {
@@ -823,10 +880,19 @@ async function confirmarFirma() {
   pagosHoy.push(registro);
   agregarAlLog(registro);
 
-  // Quitar proveedor de la lista
+  // Quitar proveedor de la lista y sincronizar con Sheets
   listaProvs = listaProvs.filter(p => p.nombre !== firmaActiva.proveedor);
   localStorage.setItem('frankie_lista', JSON.stringify(listaProvs));
   actualizarSelectProveedores();
+
+  // Sincronizar lista actualizada con Sheets para que otros dispositivos la vean
+  if (config.url) {
+    fetch(config.url, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: 'lista', lista: listaProvs })
+    }).catch(e => console.error(e));
+  }
 
   document.getElementById('proveedor').value = '';
   const display = document.getElementById('proveedorDisplay');

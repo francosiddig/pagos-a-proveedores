@@ -204,17 +204,16 @@
 
 <!-- MODAL SETUP -->
 <div class="modal-overlay" id="modalOverlay">
-  <div class="modal">
-    <h2>Configuración inicial</h2>
-    <p>Conectá la app con tu Google Sheet. Solo hay que hacerlo una vez.</p>
-    <ol>
-      <li>Abrí <a href="https://sheets.google.com" target="_blank">Google Sheets</a> y creá una hoja nueva</li>
-      <li>En la fila 1 poné estos encabezados:<br>
-        <code style="font-size:11px;color:var(--accent2)">Fecha | Hora | Proveedor | Cobrador | Importe | Forma de Pago | Registrado por | Firma</code></li>
-      <li>Andá a <b>Extensiones → Apps Script</b>, pegá el script de abajo, guardá</li>
-      <li><b>Implementar → Nueva implementación</b> → Tipo: App web → Acceso: Cualquiera → Implementar</li>
-      <li>Copiá la URL y pegala abajo</li>
-    </ol>
+  <div class="modal" style="max-width:380px;">
+    <h2>Bienvenido a Frankie</h2>
+    <p>Ingresá tu nombre para empezar. Solo se pide una vez en este dispositivo.</p>
+    <div class="field-group">
+      <label>Tu nombre</label>
+      <input type="text" id="registradorInput" placeholder="Ej: Franco, Matias..." />
+    </div>
+    <button class="btn-primary" onclick="guardarConfig()">Entrar</button>
+  </div>
+</div>
     <details style="margin-bottom:18px;">
       <summary style="cursor:pointer;font-size:12px;color:var(--accent2);font-family:var(--mono);margin-bottom:8px;">▶ Ver script de Apps Script</summary>
       <pre id="scriptCode" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;color:var(--text2);overflow-x:auto;line-height:1.6;white-space:pre-wrap;">function doPost(e) {
@@ -437,16 +436,21 @@ function doGet(e) {
 <div class="toast" id="toast"></div>
 
 <script>
-let config = { url: '', registrador: '' };
+let config = { url: 'https://script.google.com/macros/s/AKfycbwHcMwHEuQ2lA8UmkVXjujtP_Onr0cmx0Zy40EZCUQQ2fMWL0seSWbaeIf-pp9hjvQOfg/exec', registrador: '' };
 let pagosHoy = [];
 let firmaActiva = null;
 let canvasEl = null, ctx = null, dibujando = false, firmaTrazada = false;
-let listaProvs = []; // [{nombre, monto}]
+let listaProvs = [];
 
 window.onload = () => {
   const saved = localStorage.getItem('frankie_config');
   if (saved) {
-    config = JSON.parse(saved);
+    const parsed = JSON.parse(saved);
+    config.registrador = parsed.registrador || '';
+  }
+  if (!config.registrador) {
+    document.getElementById('modalOverlay').classList.remove('hidden');
+  } else {
     document.getElementById('modalOverlay').classList.add('hidden');
     actualizarStatus(true);
     sincronizarDesdeSheets();
@@ -467,19 +471,19 @@ function getFecha() {
 
 function abrirSetup() {
   document.getElementById('modalOverlay').classList.remove('hidden');
-  if (config.url) document.getElementById('scriptUrl').value = config.url;
   if (config.registrador) document.getElementById('registradorInput').value = config.registrador;
 }
 
 function guardarConfig() {
-  const url = document.getElementById('scriptUrl').value.trim();
   const reg = document.getElementById('registradorInput').value.trim();
-  if (!url || !reg) { showToast('Completá los dos campos', 'error'); return; }
-  config = { url, registrador: reg };
+  if (!reg) { showToast('Ingresá tu nombre', 'error'); return; }
+  config.registrador = reg;
   localStorage.setItem('frankie_config', JSON.stringify(config));
   document.getElementById('modalOverlay').classList.add('hidden');
   actualizarStatus(true);
-  showToast('Configuración guardada ✓', 'success');
+  sincronizarDesdeSheets();
+  setInterval(sincronizarDesdeSheets, 30000);
+  showToast('Bienvenido ' + reg, 'success');
 }
 
 function actualizarStatus(ok) {

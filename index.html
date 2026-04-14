@@ -199,7 +199,7 @@ main { flex: 1; display: grid; grid-template-columns: 360px 1fr; }
 
 <script>
 // ── Config ────────────────────────────────────────────────────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHcMwHEuQ2lA8UmkVXjujtP_Onr0cmx0Zy40EZCUQQ2fMWL0seSWbaeIf-pp9hjvQOfg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznu7PXSHRdeJ8HnWpr7ChAJ1iBKCtpnobrfZekfTRuGVo-Mv_ZoA3y1mbrTMYjupBkCA/exec';
 
 let nombre = '';
 let firmaActiva = null;
@@ -331,7 +331,7 @@ async function confirmarFirma() {
   };
 
   let ok = false;
-  if (SCRIPT_URL && SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbwHcMwHEuQ2lA8UmkVXjujtP_Onr0cmx0Zy40EZCUQQ2fMWL0seSWbaeIf-pp9hjvQOfg/exec') {
+  if (SCRIPT_URL && SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbznu7PXSHRdeJ8HnWpr7ChAJ1iBKCtpnobrfZekfTRuGVo-Mv_ZoA3y1mbrTMYjupBkCA/exec') {
     try {
       await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(reg) });
       ok = true;
